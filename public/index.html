@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Conversor MP4 → M3U8</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0b0c10; color: #eee; text-align: center; padding: 50px; }
+    h1 { color: #ff4500; }
+    input, button { margin: 10px; padding: 10px; font-size: 16px; }
+    pre { text-align: left; background: #111; padding: 10px; border-radius: 8px; max-width: 600px; margin: 20px auto; }
+    video { margin-top: 20px; max-width: 80%; border: 2px solid #ff4500; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Conversor MP4 → M3U8 (HLS)</h1>
+  <input type="file" id="file" accept="video/mp4">
+  <button id="send">Converter</button>
+  <pre id="log"></pre>
+  <video id="player" controls></video>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const sendBtn = document.getElementById("send");
+    const fileInput = document.getElementById("file");
+    const log = document.getElementById("log");
+    const player = document.getElementById("player");
+
+    sendBtn.onclick = async () => {
+      const f = fileInput.files[0];
+      if (!f) { log.textContent = "Selecione um arquivo MP4 primeiro."; return; }
+
+      const fd = new FormData();
+      fd.append("file", f);
+
+      log.textContent = "Enviando e convertendo...";
+
+      const res = await fetch("/upload", { method: "POST", body: fd });
+      const j = await res.json();
+
+      log.textContent = JSON.stringify(j, null, 2);
+
+      if (j.playlist) {
+        const url = j.playlist;
+
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(url);
+          hls.attachMedia(player);
+        } else if (player.canPlayType("application/vnd.apple.mpegurl")) {
+          player.src = url;
+        } else {
+          log.textContent += "\nSeu navegador não suporta HLS.";
+        }
+      }
+    };
+  </script>
+</body>
+</html>
